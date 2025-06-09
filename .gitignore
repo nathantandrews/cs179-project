@@ -50,4 +50,12 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 *$py.class
-.ipynb_checkpoints/ 
+.ipynb_checkpoints/
+
+# Ignore all files
+*
+*/*
+
+# But keep these specific files
+!cs179_project.ipynb
+!testing_ising_model.ipynb 
