@@ -73,7 +73,7 @@ def download_data(dataset_url: str, model_path: p.Path, data_path: p.Path) -> No
     zip_file = dataset_url.split("/")[-1]
     zip_path: p.Path = p.Path(model_path / zip_file)
     if not os.path.exists(data_path):
-        os.mkdir(data_path)
+        data_path.mkdir(parents=True, exist_ok=True)
         logging.info("Downloading MovieLens dataset...")
         urllib.request.urlretrieve(dataset_url, zip_path)
         logging.info("Extracting...")
@@ -93,7 +93,8 @@ def download_data(dataset_url: str, model_path: p.Path, data_path: p.Path) -> No
         logging.info("Dataset already exists.")
 
 def log_run_header(user_count: int, movie_count: int,
-                   c_value: float, file_path: p.Path = RUN_HISTORY_PATH) -> None:
+                   c_value: float, min_rating: float,
+                   file_path: p.Path = RUN_HISTORY_PATH) -> None:
     """
     Logs the header for each run.
 
@@ -109,6 +110,7 @@ def log_run_header(user_count: int, movie_count: int,
         f.write(f"{'u_count:':<{LABEL_WIDTH}}{user_count:>{VALUE_WIDTH}}\n")
         f.write(f"{'m_count:':<{LABEL_WIDTH}}{movie_count:>{VALUE_WIDTH}}\n")
         f.write(f"{'c_value:':<{LABEL_WIDTH}}{c_value:>{VALUE_WIDTH}.4f}\n")
+        f.write(f"{'min_rating:':<{LABEL_WIDTH}}{min_rating:>{VALUE_WIDTH}.2f}\n")
         f.write(f"{'Run at:':<{LABEL_WIDTH}}{timestamp:>{VALUE_WIDTH}}\n")
         f.write("-" * (LABEL_WIDTH + VALUE_WIDTH) + "\n")
 
@@ -362,7 +364,7 @@ def get_error_rate(model: gm.GraphModel, Xte: np.ndarray) -> float:
 if __name__ == "__main__":
     # Initialize params and run-log
     user_count, movie_count, c_value, minimum_rating = initialize_parameters()
-    log_run_header(user_count, movie_count, c_value)
+    log_run_header(user_count, movie_count, c_value, minimum_rating)
 
     # Data manipulation
     download_data(DATASET_URL, MODEL_PATH, DATA_PATH)
