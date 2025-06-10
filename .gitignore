@@ -52,10 +52,8 @@ __pycache__/
 *$py.class
 .ipynb_checkpoints/
 
-# Ignore all files
-*
-*/*
+# *
+# */*
 
-# But keep these specific files
-!cs179_project.ipynb
 !testing_ising_model.ipynb 
+!model

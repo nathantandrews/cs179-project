@@ -1,1 +1,2 @@
-# cs179-project
+# Movie Recommendation AI
+### Ising Model
