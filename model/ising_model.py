@@ -38,7 +38,7 @@ INDEPENDENT: str = "independent"
 ISING: str = "ising"
 
 logging.basicConfig(
-    filename=f"logs/log_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
+    filename=f"logs/log_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
     filemode="w",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
