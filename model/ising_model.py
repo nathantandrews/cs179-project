@@ -13,19 +13,11 @@ import logging
 import pandas as pd
 import numpy as np
 import pathlib as p
-import matplotlib.pyplot as plt
 import pyGMs as gm
 import pyGMs.wmb as wmb
 
 warnings.filterwarnings('ignore')
 ssl._create_default_https_context = ssl._create_unverified_context
-
-logging.basicConfig(
-    filename=f"log_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
-    filemode="w",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
 
 ### Random seed for reproducibility
 np.random.seed(42)
@@ -35,7 +27,6 @@ DATASET_URL: str = "https://files.grouplens.org/datasets/movielens/ml-latest.zip
 MODEL_PATH: p.Path = p.Path("model")
 LOG_PATH: p.Path = p.Path("logs")
 LOG_PATH.mkdir(exist_ok=True)
-
 DATA_PATH: p.Path = p.Path(MODEL_PATH / "data")
 RATINGS_PATH: p.Path = p.Path(DATA_PATH / "ratings.csv")
 MOVIES_PATH: p.Path = p.Path(DATA_PATH / "movies.csv")
@@ -43,6 +34,15 @@ RUN_HISTORY_PATH: p.Path = p.Path(LOG_PATH / "run_history.log")
 LABEL_WIDTH = 40
 VALUE_WIDTH = 20
 WRITTEN_SUBHEADINGS: set[str] = set()
+INDEPENDENT: str = "independent"
+ISING: str = "ising"
+
+logging.basicConfig(
+    filename=f"logs/log_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
+    filemode="w",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 def initialize_parameters() -> tuple:
     """
@@ -117,14 +117,14 @@ def log_run_data(model_type: str, output_dict: dict, file_path: p.Path = RUN_HIS
     Logs a run of the Ising Model
 
     Args:
-        model_type (str): "Independent" or "Ising" Model.
+        model_type (str): Independent or Ising Model.
         output_dict (dict): dictionary containing the outputs to log.
         file_path (p.Path, optional): path to log file. Defaults to RUN_HISTORY_PATH.
     """
     with open(file_path, "a") as f:
         subheading = {
-                    "independent": "Independent Model",
-                    "ising": "Ising Model"
+                    INDEPENDENT: "Independent Model",
+                    ISING: "Ising Model"
                  }.get(model_type.lower(), "Unknown Model")
         if model_type not in WRITTEN_SUBHEADINGS:
             f.write(f"{subheading}\n")
@@ -188,9 +188,7 @@ def conditional(factor: gm.Factor, i: int, x: np.ndarray):
         np.ndarray: A 1D array of shape (i.states,) representing the conditional values
                     of the factor over variable `i`.
     """
-    logging.info("Computing Conditional...")
     result = factor.t[tuple(x[v] if v != i else slice(v.states) for v in factor.vars)]
-    logging.info("Conditional Done.")
     return result
 
 def pseudolikelihood(model: gm.GraphModel, X: np.ndarray):
@@ -255,17 +253,17 @@ def get_likelihood(model_type: str, model: gm.GraphModel):
         model (gm.GraphModel): model to get likelihood from
     """
     logging.info("Computing the Training/Testing Likelihood/Pseudo-Likelihood...")
-    if model_type == "independent":
+    if model_type == INDEPENDENT:
         ind_train_ll = np.mean([model.logValue(x) for x in Xtr])
         ind_test_ll = np.mean([model.logValue(x) for x in Xte])
-        log_run_data("independent", {"- Log-Likelihood (Train)" : float(ind_train_ll),
+        log_run_data(INDEPENDENT, {"- Log-Likelihood (Train)" : float(ind_train_ll),
                                     "- Log-Likelihood (Test)" : float(ind_test_ll)})
         logging.info("Likelihood/Pseudo-Likelihood Done.")
         return ind_train_ll, ind_test_ll
-    elif model_type == "ising":
+    elif model_type == ISING:
         pseudolikelihood_tr: float = float(pseudolikelihood(model, Xtr).mean())
         pseudolikelihood_te: float = float(pseudolikelihood(model, Xte).mean())
-        log_run_data("ising", {"- Pseudo-Likelihood (Train)" : pseudolikelihood_tr,
+        log_run_data(ISING, {"- Pseudo-Likelihood (Train)" : pseudolikelihood_tr,
                                 "- Pseudo-Likelihood (Test)" : pseudolikelihood_te})
         logging.info("Likelihood/Pseudo-Likelihood Done.")
         return pseudolikelihood_tr, pseudolikelihood_te
@@ -287,7 +285,7 @@ def get_average_connectivity(nbrs: list) -> tuple[float, float]:
     logging.info("Computing the Average Connectivity...")
     average_connectivity = np.mean([len(nn) for nn in nbrs])
     std_dev = np.std([len(nn) for nn in nbrs])
-    log_run_data("ising", {"- Average Connectivity" : f"{average_connectivity:.4f} +/- {std_dev:.4f}"})
+    log_run_data(ISING, {"- Average Connectivity" : f"{average_connectivity:.4f} +/- {std_dev:.4f}"})
     logging.info("Average Connectivity Done.")
     return float(average_connectivity), float(std_dev)
 
@@ -357,19 +355,28 @@ def get_error_rate(model: gm.GraphModel, Xte: np.ndarray) -> float:
     Xte_missing[mask] = -1
     Xte_hat = impute_missing(model, Xte_missing)
     error_rate = np.mean(Xte_hat[mask] != Xte[mask]) * 100
-    log_run_data("ising", {"- Error Rate" : f"{error_rate:.4f}%"})
+    log_run_data(ISING, {"- Error Rate" : f"{error_rate:.4f}%"})
     logging.info("Error Rate Done.")
     return error_rate
 
 if __name__ == "__main__":
+    # Initialize params and run-log
     user_count, movie_count, c_value, minimum_rating = initialize_parameters()
     log_run_header(user_count, movie_count, c_value)
+
+    # Data manipulation
     download_data(DATASET_URL, MODEL_PATH, DATA_PATH)
     X, pivot = filter_data(user_count, movie_count, minimum_rating)
     # short_labels = get_short_labels(pivot)
     Xtr, Xte = train_test_split(X, test_size=0.2, random_state=42)
+
+    # Independent Model
     ind_model = independent_model(Xtr, movie_count)
+    get_likelihood(INDEPENDENT, ind_model)
+
+    # Ising Model
     isi_model, nbrs = ising_model(Xtr, movie_count, c_value)
+    get_likelihood(ISING, isi_model)
     get_average_connectivity(nbrs)
     get_error_rate(isi_model, Xte)
 
