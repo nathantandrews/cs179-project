@@ -15,19 +15,19 @@ def parse_log_file_custom(path):
             continue
 
         # Extract fields
-        u_count = int(re.search(r"u_count:\s+(\d+)", block).group(1))
-        m_count = int(re.search(r"m_count:\s+(\d+)", block).group(1))
-        c_value = float(re.search(r"c_value:\s+([\d.]+)", block).group(1))
-        min_rating = float(re.search(r"min_rating:\s+([\d.]+)", block).group(1))
+        u_count = int(re.search(r"u_count:\s+(\d+)", block).group(1)) # type: ignore
+        m_count = int(re.search(r"m_count:\s+(\d+)", block).group(1)) # type: ignore
+        c_value = float(re.search(r"c_value:\s+([\d.]+)", block).group(1)) # type: ignore
+        min_rating = float(re.search(r"min_rating:\s+([\d.]+)", block).group(1)) # type: ignore
 
         label = f"{u_count} Users, {m_count} Movies, {c_value:.4f} C, MinRating {min_rating:.2f}"
 
-        ll_train = float(re.search(r"Log-Likelihood \(Train\)\s+(-?[\d.]+)", block).group(1))
-        ll_test = float(re.search(r"Log-Likelihood \(Test\)\s+(-?[\d.]+)", block).group(1))
-        pl_train = float(re.search(r"Pseudo-Likelihood \(Train\)\s+(-?[\d.]+)", block).group(1))
-        pl_test = float(re.search(r"Pseudo-Likelihood \(Test\)\s+(-?[\d.]+)", block).group(1))
-        connectivity = float(re.search(r"Average Connectivity\s+([\d.]+)", block).group(1))
-        error_rate = float(re.search(r"Error Rate\s+([\d.]+)", block).group(1))
+        ll_train = float(re.search(r"Log-Likelihood \(Train\)\s+(-?[\d.]+)", block).group(1)) # type: ignore
+        ll_test = float(re.search(r"Log-Likelihood \(Test\)\s+(-?[\d.]+)", block).group(1)) # type: ignore
+        pl_train = float(re.search(r"Pseudo-Likelihood \(Train\)\s+(-?[\d.]+)", block).group(1)) # type: ignore
+        pl_test = float(re.search(r"Pseudo-Likelihood \(Test\)\s+(-?[\d.]+)", block).group(1)) # type: ignore
+        connectivity = float(re.search(r"Average Connectivity\s+([\d.]+)", block).group(1)) # type: ignore
+        error_rate = float(re.search(r"Error Rate\s+([\d.]+)", block).group(1)) # type: ignore
 
         data[label] = [
             ll_train, ll_test, pl_train, pl_test, connectivity, error_rate
